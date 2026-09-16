@@ -1,0 +1,61 @@
+{
+  "id": "compshare-provider",
+  "name": "CompShare Provider",
+  "description": "Registers UCloud CompShare (优云智算 ModelVerse) GLM 5.3 Flash and DeepSeek V4.1 Flash as an OpenClaw provider over the OpenAI Responses API. Supports the China mainland pay-as-you-go endpoint, the Agent Plan (Coding Plan) endpoint and the overseas endpoint.",
+  "version": "1.0.0",
+  "providers": [
+    "compshare"
+  ],
+  "providerEndpoints": [
+    {
+      "endpointClass": "compshare-modelverse",
+      "hosts": [
+        "api.modelverse.cn",
+        "cp.compshare.cn",
+        "api.umodelverse.ai"
+      ]
+    }
+  ],
+  "setup": {
+    "providers": [
+      {
+        "id": "compshare",
+        "authMethods": [
+          "api-key"
+        ],
+        "envVars": [
+          "COMPSHARE_API_KEY",
+          "MODELVERSE_API_KEY"
+        ]
+      }
+    ]
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "region": {
+        "type": "string",
+        "enum": [
+          "cn",
+          "overseas"
+        ],
+        "default": "cn",
+        "description": "Which CompShare deployment to call: cn = China mainland (api.modelverse.cn, plus cp.compshare.cn for the Agent Plan), overseas = outside China (api.umodelverse.ai)."
+      },
+      "surface": {
+        "type": "string",
+        "enum": [
+          "api",
+          "plan"
+        ],
+        "default": "api",
+        "description": "Billing surface for the China mainland region: api = pay-as-you-go (api.modelverse.cn, billed per token), plan = Agent Plan / Coding Plan (cp.compshare.cn, needs the plan-specific key). The plan endpoint does not exist outside China, so region=overseas falls back to the overseas pay-as-you-go endpoint."
+      },
+      "baseUrl": {
+        "type": "string",
+        "description": "Explicit base URL override. When set it wins over region/surface. Useful for a proxy or for a future endpoint that is not in the built-in table."
+      }
+    }
+  }
+}
