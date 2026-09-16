@@ -111,7 +111,8 @@ openclaw plugins install clawhub:@mirr0ch1/compshare-provider
 ### 方式二:从源码加载
 
 ```bash
-git clone https://github.com/Mirr0ch1/compshare-provider.git ~/coding/compshare-provider
+git clone https://github.com/Mirr0ch1/compshare-provider-openclaw.git \
+  ~/coding/compshare-provider-openclaw
 ```
 
 然后在 `~/.openclaw/openclaw.json` 里挂载:
@@ -120,7 +121,7 @@ git clone https://github.com/Mirr0ch1/compshare-provider.git ~/coding/compshare-
 {
   "plugins": {
     "allow": ["compshare-provider"],
-    "load": { "paths": ["~/coding/compshare-provider"] },
+    "load": { "paths": ["~/coding/compshare-provider-openclaw"] },
     "entries": {
       "compshare-provider": {
         "enabled": true,
@@ -296,6 +297,11 @@ OpenClaw 的多轮上下文也验证正常(391 → 782)。
 ---
 
 ## 更新日志 / Changelog
+
+**v1.0.1**(2026-09-17)
+- 项目规范化改名为 `compshare-provider-openclaw`(GitHub 仓库同步改名)
+- 插件 id / provider id **保持不变**(`compshare-provider` / `compshare`),已有配置无需改动
+- README 中的仓库地址、克隆路径、`plugins.load.paths` 示例同步更新
 
 **v1.0.0**(2026-09-17)
 - 首个版本:注册 `glm-5.3-flash` 与 `deepseek-v4.1-flash`,走 OpenAI Responses

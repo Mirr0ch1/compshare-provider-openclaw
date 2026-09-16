@@ -1,6 +1,6 @@
 {
   "name": "@mirr0ch1/compshare-provider",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "main": "index.js",
   "description": "OpenClaw provider plugin for UCloud CompShare (优云智算 ModelVerse): GLM 5.3 Flash and DeepSeek V4.1 Flash over the OpenAI Responses API, across the China mainland, Agent Plan and overseas endpoints.",
