@@ -2,7 +2,7 @@
   "id": "compshare-provider",
   "name": "CompShare Provider",
   "description": "Registers UCloud CompShare (优云智算 ModelVerse) GLM 5.3 Flash and DeepSeek V4.1 Flash as an OpenClaw provider over the OpenAI Responses API. Supports the China mainland pay-as-you-go endpoint, the Agent Plan (Coding Plan) endpoint and the overseas endpoint.",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "providers": [
     "compshare"
   ],

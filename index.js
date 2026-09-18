@@ -103,10 +103,18 @@ const GLM_EFFORTS = ["low", "medium", "high"];
 /**
  * Models hosted by CompShare that this plugin exposes natively.
  *
- * `maxTokens` limits are the gate's own reported ceilings, read straight out
- * of its rejection messages:
+ * The gate's own accepted `max_tokens` ceilings, read straight out of its
+ * rejection messages, are wider than what is declared here:
  *   glm-5.3-flash       -> "限制数值范围[1, 131072]"
  *   deepseek-v4.1-flash -> "the valid range of max_tokens is [1, 393216]"
+ *
+ * `maxTokens` is deliberately the *agent-usable* budget, not the gate ceiling.
+ * OpenClaw sends this value as `max_output_tokens` on every request, so a
+ * ceiling-sized value removes every server-side stop condition: a model that
+ * decides to keep writing runs until the run timeout instead of stopping at a
+ * sane answer length. Both models therefore share the 131072 budget — still
+ * generous for a reasoning model, where thinking and the answer draw on the
+ * same allowance, but bounded.
  *
  * `contextWindow` is the vendor-published 1M window for both models.
  */
@@ -125,7 +133,7 @@ const MODEL_DEFS = [
     name: "DeepSeek V4.1 Flash",
     input: ["text", "image"],
     contextWindow: 1048576,
-    maxTokens: 393216,
+    maxTokens: 131072,
     compat: { supportedReasoningEfforts: DEEPSEEK_EFFORTS },
     canDisableThinking: true,
   },
@@ -210,6 +218,32 @@ function resolveForcedEffort(modelId, thinkingLevel) {
   return findModelDef(modelId)?.canDisableThinking ? "none" : undefined;
 }
 
+/**
+ * ModelVerse's own wording for a context-window overflow.
+ *
+ * Observed in gateway logs against `api.modelverse.cn` (2026-09-19,
+ * `provider=compshare model=deepseek-v4.1-flash`), verbatim shape:
+ *
+ *   400 [trace_id: ac06116d-…] The input is longer than the model's context
+ *   length trace_id: 595f548aeb220c019a814e3584aac2e2
+ *
+ * Core cannot classify that on its own, for two independent reasons:
+ *   - The overflow tables in `agents/failover/context-overflow` are anchored
+ *     with `^`, and the leading `[trace_id: …]` marker defeats the anchor.
+ *   - The generic candidate heuristic only accepts
+ *     `too large|too long|too many|exceed|overflow|limit|maximum|max`, and
+ *     "is longer than" is not in that list.
+ *
+ * Both miss together, so the 400 falls through to the catch-all
+ * "LLM request failed: provider rejected the request schema or tool payload."
+ * — a sentence that reads like a tool-payload or moderation rejection, and
+ * which also skips core's context-overflow recovery path (auto-compaction
+ * then retry). Matching on the text alone, unanchored, sidesteps the
+ * `[trace_id: …]` prefix.
+ */
+const CONTEXT_OVERFLOW_RE =
+  /\b(?:input|prompt|request)\b[^.]{0,80}?\b(?:longer than|exceed(?:s|ed|ing)?)\b[^.]{0,60}?\bcontext\s+(?:length|window)\b/i;
+
 export default definePluginEntry({
   id: PLUGIN_ID,
   name: "CompShare Provider",
@@ -255,6 +289,13 @@ export default definePluginEntry({
           ...(ctx.baseUrl ? {} : { baseUrl: resolveBaseUrl(readPluginConfig(ctx.config)) }),
         };
       },
+
+      // Core only consults this hook once its own candidate heuristic (or a
+      // structured status/code/type on the error) says "possibly an overflow".
+      // ModelVerse's 400 carries `status: 400` and a `type`, so the hook is
+      // reached; see CONTEXT_OVERFLOW_RE for why core's own tables miss it.
+      matchesContextOverflowError: ({ errorMessage }) =>
+        CONTEXT_OVERFLOW_RE.test(String(errorMessage ?? "")),
 
       // Core drops the `reasoning` field entirely for `off`, which leaves the
       // gateway on its own default. Pin the effort explicitly for the models

@@ -57,7 +57,7 @@ OpenClaw 能原生解析、原生回传,不需要像 Chat Completions 那样靠 
 | 🖼️ **多模态** | 两款模型都支持图片输入(`input_image`) |
 | 🎚️ **思考等级可控** | `/think off` 对 DeepSeek 是**确定性**关闭思考(不是"看运气") |
 | 🔌 **零配置默认** | 只填 API Key 即可用,默认走中国大陆按量端点 |
-| 🩺 **按实测写死上限** | `maxTokens` / `contextWindow` 来自网关自己的报错与厂商规格,不是猜的 |
+| 🩺 **上限有据可依** | `contextWindow` 取厂商规格,`maxTokens` 是实测过的 agent 输出预算,不是随手填的数 |
 
 ---
 
@@ -82,9 +82,13 @@ OpenClaw 能原生解析、原生回传,不需要像 Chat Completions 那样靠 
 | 模型 ID | 输入 | 上下文 | 最大输出 | 可关闭思考 | Capability |
 |---|---|---|---|---|---|
 | `glm-5.3-flash` | text + image | 1,048,576 | 131,072 | ❌ 始终思考 | 混合线性/稀疏注意力 MoE,原生多模态 |
-| `deepseek-v4.1-flash` | text + image | 1,048,576 | 393,216 | ✅ `effort: "none"` | 原生视觉 MoE |
+| `deepseek-v4.1-flash` | text + image | 1,048,576 | 131,072 | ✅ `effort: "none"` | 原生视觉 MoE |
 
-`maxTokens` 直接来自网关的上限报错(它自己说的 `[1, 131072]` / `[1, 393216]`),不是保守估计。
+网关自己接受的 `max_tokens` 上限更宽(`[1, 131072]` / `[1, 393216]`),但插件声明的 `maxTokens`
+是**给 agent 用的输出预算**,不是网关天花板。OpenClaw 会把它当 `max_output_tokens` 发出去,
+声明成天花板等于取消所有服务端停止条件——模型一旦决定继续写,就会一路跑到 run 超时。
+两款模型因此统一用 131,072(对推理模型仍然宽裕,思考与正文共用这份预算,但有边界)。
+需要更长输出时在 `models.providers.compshare.models[]` 里自行调高。
 
 ### 价格 / Pricing(CNY / 百万 token,按量端点)
 
@@ -156,7 +160,7 @@ echo 'COMPSHARE_API_KEY=your-key-here' >> ~/.openclaw/.env
             "api": "openai-responses",
             "compat": { "supportedReasoningEfforts": ["low", "medium", "high"] } },
           { "id": "deepseek-v4.1-flash", "name": "DeepSeek V4.1 Flash", "reasoning": true,
-            "input": ["text", "image"], "contextWindow": 1048576, "maxTokens": 393216,
+            "input": ["text", "image"], "contextWindow": 1048576, "maxTokens": 131072,
             "api": "openai-responses",
             "compat": { "supportedReasoningEfforts": ["none", "low", "medium", "high"] } }
         ]
@@ -293,10 +297,21 @@ OpenClaw 的多轮上下文也验证正常(391 → 782)。
 | `该模型始终思考,不支持关闭思考` | 对 GLM 发了 `effort: "none"`。本插件已规避;自定义 baseUrl 或手工改 body 时注意 |
 | 空回复(有 reasoning 但没正文) | 输出预算被思考吃光了。调高 `maxTokens`,或对 DeepSeek 用 `/think off` |
 | 改了端点不生效 | `region`/`surface` 与 `models.providers.compshare.baseUrl` 是两处,需同步 |
+| 报 `LLM request failed: provider rejected the request schema or tool payload.` | 这句是 OpenClaw 对**任意 HTTP 400/422** 的兜底文案,不代表工具 schema 或内容审查被拒。真实原因取 `journalctl --user -u openclaw-gateway \| grep rawError=`。若是 `The input is longer than the model's context length`,v1.1.0 起本插件已用 `matchesContextOverflowError` 认领,会正确走上下文超长恢复(自动压缩 + 重试) |
+| 改了插件的 `maxTokens` / `contextWindow` 不生效 | `models.mode: "replace"` 时模型元数据以 `models.providers.compshare.models[]` 为准,插件的 `MODEL_DEFS` 不参与;两处都要改 |
 
 ---
 
 ## 更新日志 / Changelog
+
+**v1.1.0**(2026-09-19)
+- 新增 `matchesContextOverflowError`:认领 ModelVerse 的上下文超长措辞
+  `The input is longer than the model's context length`。此前该 400 会被 OpenClaw
+  归类为 `format`,渲染成兜底文案 "provider rejected the request schema or tool payload",
+  并跳过上下文超长恢复路径;现在正确归类为 `context_overflow`,走自动压缩 + 重试
+- `deepseek-v4.1-flash` 的 `maxTokens` 由 393,216(网关天花板)改为 131,072(agent 输出预算),
+  与 `glm-5.3-flash` 一致,避免取消服务端停止条件
+- README 故障排查补充两条:兜底文案怎么读真实原因、模型元数据受 `models.mode` 影响
 
 **v1.0.1**(2026-09-17)
 - 项目规范化改名为 `compshare-provider-openclaw`(GitHub 仓库同步改名)
