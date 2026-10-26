@@ -158,11 +158,13 @@ echo 'COMPSHARE_API_KEY=your-key-here' >> ~/.openclaw/.env
           { "id": "glm-5.3-flash", "name": "GLM 5.3 Flash", "reasoning": true,
             "input": ["text", "image"], "contextWindow": 1048576, "maxTokens": 131072,
             "api": "openai-responses",
-            "compat": { "supportedReasoningEfforts": ["low", "medium", "high"] } },
+            "compat": { "supportedReasoningEfforts": ["low", "medium", "high", "max"] },
+            "thinkingLevelMap": { "off": null, "xhigh": "max" } },
           { "id": "deepseek-v4.1-flash", "name": "DeepSeek V4.1 Flash", "reasoning": true,
             "input": ["text", "image"], "contextWindow": 1048576, "maxTokens": 131072,
             "api": "openai-responses",
-            "compat": { "supportedReasoningEfforts": ["none", "low", "medium", "high"] } }
+            "compat": { "supportedReasoningEfforts": ["none", "low", "medium", "high", "max"] },
+            "thinkingLevelMap": { "xhigh": "max" } }
         ]
       }
     }
@@ -240,12 +242,23 @@ openclaw agent --agent main --model compshare/deepseek-v4.1-flash --thinking off
 
 | OpenClaw level | 发到网关的 `reasoning.effort` | GLM 5.3 Flash | DeepSeek V4.1 Flash |
 |---|---|---|---|
-| `off` | `none`(仅 DeepSeek) / **不发该字段**(GLM) | 仍在思考(上游不支持关闭) | ✅ 确定性关闭思考 |
+| `off` | `none`(仅 DeepSeek) / **不发该字段**(GLM) | **不提供**(上游不支持关闭) | ✅ 确定性关闭思考 |
 | `low` | `low` | 思考 | 思考 |
 | `medium` | `medium` | 思考 | 思考 |
 | `high` | `high` | 思考 | 思考 |
+| `xhigh` | `max` | 思考(模型最高档) | 思考(模型最高档) |
+| `max` | `max` | 思考(模型最高档) | 思考(模型最高档) |
+| `ultra` | 由核心降为 `max` | 思考 | 思考 |
 
 默认 `high`——GLM 反正一直思考,让 DeepSeek 保持同一模式,两个模型在 agent loop 里行为一致。
+
+> OpenClaw 2026.10 起原生支持 `xhigh` / `max`(并由核心追加 `ultra`)。ModelVerse 这
+> 两款模型没有独立的 `xhigh` 档,所以用 `thinkingLevelMap.xhigh: "max"` 把 OpenClaw
+> 的 `xhigh` 映射到模型最高档;`max` 直通。这样全局 `thinkingDefault: "max"` 不会再
+> 提示"不支持 max,已回退到 high"。
+>
+> GLM 额外设置 `thinkingLevelMap.off: null`(profile 也不声明 `off`),因为网关对
+> 流式 `effort: "none"` 会间歇性返回 `response.failed`。
 
 ---
 
@@ -303,6 +316,19 @@ OpenClaw 的多轮上下文也验证正常(391 → 782)。
 ---
 
 ## 更新日志 / Changelog
+
+**v1.2.0**(2026-10-26)
+- **跟进 OpenClaw `xhigh` / `max`**:thinking profile 扩为
+  `off`(仅 DeepSeek)`/ low / medium / high / xhigh / max`,修复
+  `agents.defaults.thinkingDefault: "max"` 或 `--thinking max` 时提示
+  "不支持 max,已回退到 high"。
+- 两款模型的 `compat.supportedReasoningEfforts` 增加 `max`;ModelVerse 没有独立的
+  `xhigh` 档,用 `thinkingLevelMap: { xhigh: "max" }` 映射到模型最高档。
+- **GLM 不再提供 `off`**:网关明确"始终思考",并对流式 `effort: "none"` 间歇性返回
+  `response.failed`;profile 过滤 `off`,同时用 `thinkingLevelMap: { off: null }`
+  让核心自己的解析器也跳过它。
+- ⚠️ `models.mode: "replace"` 的用户需要把上面的 `compat` / `thinkingLevelMap`
+  同步到 `openclaw.json`(本机已同步)。
 
 **v1.1.0**(2026-09-19)
 - 新增 `matchesContextOverflowError`:认领 ModelVerse 的上下文超长措辞

@@ -85,7 +85,9 @@ const ENDPOINTS = {
  *
  * `deepseek-v4.1-flash` honours `"none"` — three identical calls produced
  * 0/0/0 reasoning tokens with it, versus a non-deterministic 0/29/41 when the
- * field is omitted — so it declares the full ladder.
+ * field is omitted — so it declares the full ladder. `"max"` is accepted by
+ * the gateway (HTTP 200) and is exposed as OpenClaw's top tier; `"xhigh"` is
+ * not a ModelVerse tier, so OpenClaw's `xhigh` is mapped onto `"max"` below.
  *
  * `glm-5.3-flash` cannot stop thinking. The gateway says so outright on the
  * Responses endpoint:
@@ -95,10 +97,12 @@ const ENDPOINTS = {
  * attempts slip through), which is exactly why the field must never be sent
  * for this model rather than sent-and-hoped. `"none"` is therefore absent
  * from GLM's declared ladder — which also makes core's own effort resolver
- * drop the field instead of substituting `"none"`.
+ * drop the field instead of substituting `"none"`. The gateway's own error
+ * names `low`/`high`/`max`; `max` is therefore GLM's top tier, and OpenClaw's
+ * `xhigh` is mapped onto it as well.
  */
-const DEEPSEEK_EFFORTS = ["none", "low", "medium", "high"];
-const GLM_EFFORTS = ["low", "medium", "high"];
+const DEEPSEEK_EFFORTS = ["none", "low", "medium", "high", "max"];
+const GLM_EFFORTS = ["low", "medium", "high", "max"];
 
 /**
  * Models hosted by CompShare that this plugin exposes natively.
@@ -126,6 +130,9 @@ const MODEL_DEFS = [
     contextWindow: 1048576,
     maxTokens: 131072,
     compat: { supportedReasoningEfforts: GLM_EFFORTS },
+    // Mandatory thinking: `off` must never be offered, and OpenClaw's `xhigh`
+    // has no ModelVerse counterpart — send the model's own top tier instead.
+    thinkingLevelMap: { off: null, xhigh: "max" },
     canDisableThinking: false,
   },
   {
@@ -135,12 +142,13 @@ const MODEL_DEFS = [
     contextWindow: 1048576,
     maxTokens: 131072,
     compat: { supportedReasoningEfforts: DEEPSEEK_EFFORTS },
+    thinkingLevelMap: { xhigh: "max" },
     canDisableThinking: true,
   },
 ];
 
 /** Thinking levels surfaced to the user. */
-const THINKING_LEVELS = ["off", "low", "medium", "high"];
+const THINKING_LEVELS = ["off", "low", "medium", "high", "xhigh", "max"];
 
 function trimTrailingSlashes(value) {
   return value.trim().replace(/\/+$/, "");
@@ -325,10 +333,22 @@ export default definePluginEntry({
       // Thinking on by default: GLM thinks unconditionally anyway, and keeping
       // DeepSeek in the same mode makes the two models behave alike in an
       // agent loop. Use `/think off` to get DeepSeek's non-thinking path.
-      resolveThinkingProfile: () => ({
-        levels: THINKING_LEVELS.map((id) => ({ id })),
-        defaultLevel: "high",
-      }),
+      //
+      // GLM must not advertise `off`: the gateway rejects `effort: "none"` on
+      // streaming requests and keeps thinking even when the field is omitted.
+      // The catalog `thinkingLevelMap.off: null` reinforces this for core's
+      // own resolver; filtering here keeps the profile honest even for a user
+      // whose `models.providers.compshare` block predates that map.
+      resolveThinkingProfile: ({ modelId }) => {
+        const canDisable = findModelDef(modelId)?.canDisableThinking !== false;
+        const levels = canDisable
+          ? THINKING_LEVELS
+          : THINKING_LEVELS.filter((id) => id !== "off");
+        return {
+          levels: levels.map((id) => ({ id })),
+          defaultLevel: "high",
+        };
+      },
     });
   },
 });
