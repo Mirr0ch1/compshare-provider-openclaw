@@ -1,18 +1,28 @@
-<div align="center">
+<p align="center">
+  <img src="assets/readme/banner-zh-Hans.png" alt="compshare-provider — OpenClaw 插件：以 OpenAI Responses 协议接入优云智算 (CompShare / ModelVerse) 的 GLM 5.3 Flash 与 DeepSeek V4.1 Flash" width="100%">
+</p>
 
-# compshare-provider
+<p align="center">
+  <a href="https://clawhub.ai/mirr0ch1/plugins/compshare-provider"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fclawhub.ai%2Fapi%2Fv1%2Fpackages%2Fsearch%3Fq%3D%40mirr0ch1%2Fcompshare-provider%26limit%3D1&query=%24.results%5B0%5D.package.latestVersion&label=ClawHub&style=for-the-badge&color=0064FF" alt="ClawHub"></a>
+  <a href="https://clawhub.ai/mirr0ch1/plugins/compshare-provider"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fclawhub.ai%2Fapi%2Fv1%2Fpackages%2Fsearch%3Fq%3D%40mirr0ch1%2Fcompshare-provider%26limit%3D1&query=%24.results%5B0%5D.package.stats.downloads&label=ClawHub%20downloads&style=for-the-badge&color=0064FF" alt="ClawHub downloads"></a>
+  <img src="https://img.shields.io/github/stars/Mirr0ch1/compshare-provider-openclaw?style=for-the-badge&logo=github&label=stars" alt="Stars">
+  <img src="https://img.shields.io/badge/license-MIT-2ea44f?style=for-the-badge&logo=opensourceinitiative&logoColor=white" alt="MIT license">
+</p>
 
-**OpenClaw 插件:以 OpenAI Responses 协议接入优云智算 (CompShare / ModelVerse) 的 GLM 5.3 Flash 与 DeepSeek V4.1 Flash**
+<p align="center">
+  <img src="https://img.shields.io/badge/OpenClaw-2026.9.3%2B-2ea44f?style=for-the-badge" alt="OpenClaw"> <img src="https://img.shields.io/badge/transport-openai--responses-f97316?style=for-the-badge" alt="transport"> <img src="https://img.shields.io/badge/provider-compshare-0064FF?style=for-the-badge" alt="provider"> <img src="https://img.shields.io/badge/regions-CN%20%7C%20overseas-8A2BE2?style=for-the-badge" alt="regions">
+</p>
 
-*OpenClaw plugin: bring UCloud CompShare (优云智算 / ModelVerse) GLM 5.3 Flash & DeepSeek V4.1 Flash to OpenClaw over the OpenAI Responses API*
+<p align="center">
+  <a href="https://clawhub.ai/mirr0ch1/plugins/compshare-provider"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fclawhub.ai%2Fapi%2Fv1%2Fpackages%2Fsearch%3Fq%3D%40mirr0ch1%2Fcompshare-provider%26limit%3D1&query=%24.results%5B0%5D.package.stats.installs&label=ClawHub%20installs&style=flat-square&color=0064FF" alt="ClawHub installs"></a> <img src="https://img.shields.io/badge/models-2-6e7781?style=flat-square" alt="models"> <img src="https://img.shields.io/badge/endpoints-3-6e7781?style=flat-square" alt="endpoints">
+</p>
 
-[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![OpenClaw](https://img.shields.io/badge/OpenClaw-2026.9.3-blue.svg)](https://github.com/openclaw/openclaw)
-[![Provider](https://img.shields.io/badge/provider-compshare-0064ff.svg)](https://www.compshare.cn)
-[![Transport](https://img.shields.io/badge/transport-openai--responses-orange.svg)](https://www.compshare.cn/docs/modelverse/models/text_api/response_api)
-[![Regions](https://img.shields.io/badge/regions-CN%20%7C%20overseas-purple.svg)](#端点矩阵--endpoint-matrix)
+<h1 align="center">compshare-provider</h1>
 
-</div>
+<p align="center">
+  <b>OpenClaw 插件：以 OpenAI Responses 协议接入优云智算 (CompShare / ModelVerse) 的 GLM 5.3 Flash 与 DeepSeek V4.1 Flash</b><br>
+  <sub>OpenClaw plugin: bring UCloud CompShare (优云智算 / ModelVerse) GLM 5.3 Flash &amp; DeepSeek V4.1 Flash to OpenClaw over the OpenAI Responses API</sub>
+</p>
 
 ---
 
